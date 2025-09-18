@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,11 +12,51 @@ import { PlacementTestScreen } from "@/pages/PlacementTestScreen";
 import { ChatScreen } from "@/pages/ChatScreen";
 import { AppLayout } from "@/components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
-
+import { supabase } from "@/integrations/supabase/client";
 const queryClient = new QueryClient();
 
 const AppRouter = () => {
-  const { user, session } = useVibeTuneStore();
+  const { user, session, setUser, setSession } = useVibeTuneStore();
+
+  // Initialize Supabase auth state globally
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(null);
+      if (session?.user) {
+        // Defer profile fetch to avoid deadlocks
+        setTimeout(() => {
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+            .then(({ data: profile }) => {
+              if (profile) setUser(profile);
+            });
+        }, 0);
+      }
+    });
+
+    // Also load existing session on app start
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile) setUser(profile);
+          });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setSession, setUser]);
 
   // Not authenticated - show onboarding/auth flow
   if (!session || !user) {

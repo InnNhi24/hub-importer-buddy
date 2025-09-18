@@ -206,6 +206,7 @@ export type Database = {
           id: string
           last_login: string | null
           level: string | null
+          placement_test_completed: boolean | null
           username: string
         }
         Insert: {
@@ -215,6 +216,7 @@ export type Database = {
           id?: string
           last_login?: string | null
           level?: string | null
+          placement_test_completed?: boolean | null
           username: string
         }
         Update: {
@@ -224,6 +226,7 @@ export type Database = {
           id?: string
           last_login?: string | null
           level?: string | null
+          placement_test_completed?: boolean | null
           username?: string
         }
         Relationships: []
